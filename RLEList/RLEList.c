@@ -78,6 +78,12 @@ int RLEListSize(RLEList list){
     return list->size;
 }
 
+static bool checkIndexInRange(int index,int range_top,int range_bottom){
+    if(index <= range_top && index >= range_bottom){
+            return true;
+    }
+    return false;
+}
 
 RLEListResult RLEListRemove(RLEList list, int index){
     if(!list){
@@ -92,14 +98,8 @@ RLEListResult RLEListRemove(RLEList list, int index){
     while(current){
         range_top = range_bottom + (*current)->returns;
 
-        if(index < range_top && index < range_top){
+        if(checkIndexInRange(index, range_top,range_bottom)){
             (*current)->returns--;
-            return RLE_LIST_SUCCESS;
-        } else if(index == range_top){
-            (*(*current)->next)->returns--;
-            return RLE_LIST_SUCCESS;
-        } else if (index == range_bottom){
-            (*(*current)->next)->returns--;
             return RLE_LIST_SUCCESS;
         }
         current = (*current)->next;
@@ -107,4 +107,69 @@ RLEListResult RLEListRemove(RLEList list, int index){
     }
 
     return RLE_LIST_ERROR;
+}
+
+
+char RLEListGet(RLEList list, int index, RLEListResult *result){
+    if(!list ){
+        (*result) = RLE_LIST_NULL_ARGUMENT;
+        return 0;
+    }
+    if(index < 0 || index > list->size){
+        (*result) = RLE_LIST_INDEX_OUT_OF_BOUNDS;
+        return 0;
+    }
+    int range_bottom = 0;
+    int range_top = 0;
+    Node* current = list->first;
+    while(current){
+        range_top = range_bottom + (*current)->returns;
+
+        if(checkIndexInRange(index, range_top,range_bottom)){
+            (*result) = RLE_LIST_SUCCESS;
+            return (*current)->w;
+        }
+        current = (*current)->next;
+        range_bottom += (*current)->returns;
+    }
+    return 0;
+}
+
+
+char* RLEListExportToString(RLEList list, RLEListResult* result){
+    if(!list ){
+        (*result) = RLE_LIST_NULL_ARGUMENT;
+        return NULL;
+    }
+    int size = list->size;
+    char* res = (char*)malloc(sizeof(*res)*size);
+    if(!res){
+        (*result) = RLE_LIST_OUT_OF_MEMORY;
+        return NULL;
+    }
+    int index=0;
+    Node* current = list->first;
+    while (current)
+    {
+        for(int j = 0; j < (*current)->returns; j++){
+            res[index] = (*current)->w;
+            index++;
+        }
+        current = (*current)->next;
+    }
+    (*result) = RLE_LIST_SUCCESS;
+    return res;
+}
+
+
+RLEListResult RLEListMap(RLEList list, MapFunction map_function){
+    if(!list || !map_function){
+        return RLE_LIST_NULL_ARGUMENT;
+    }
+    Node* current = list->first;
+    while(current){
+        (*current)->w = map_function((*current)->w);
+        current = (*current)->next;
+    }
+    return RLE_LIST_SUCCESS;
 }
